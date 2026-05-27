@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 
 const Login = () => {
@@ -13,13 +13,8 @@ const Login = () => {
     setError('');
 
     try {
-      // Send credentials to Laravel
       const response = await api.post('/login', { email, password });
-
-      // Save the token securely in local storage
       localStorage.setItem('token', response.data.token);
-
-      // Redirect to the protected dashboard
       navigate('/dashboard');
     } catch {
       setError('Invalid email or password. Please try again.');
@@ -51,7 +46,15 @@ const Login = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <Link
+                to="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               value={password}
@@ -63,11 +66,21 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition-colors mt-2"
           >
             Sign In
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-gray-600 border-t pt-4">
+          Don&apos;t have an account?{' '}
+          <Link
+            to="/register"
+            className="text-blue-600 font-bold hover:text-blue-800 hover:underline transition-colors"
+          >
+            Register here
+          </Link>
+        </div>
       </div>
     </div>
   );

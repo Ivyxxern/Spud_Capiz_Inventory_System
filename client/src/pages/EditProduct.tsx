@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import axios from 'axios';
+import { getProductImageUrl } from '../utils/productImage';
 
 const EditProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,9 @@ const EditProduct = () => {
     expiration_date: '',
     low_stock_threshold: 5,
   });
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -35,6 +39,7 @@ const EditProduct = () => {
             : '',
           low_stock_threshold: product.low_stock_threshold,
         });
+        setExistingImageUrl(getProductImageUrl(product));
       } catch {
         setMessage({ type: 'error', text: 'Failed to load product.' });
       } finally {
@@ -53,16 +58,26 @@ const EditProduct = () => {
     });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: '', text: '' });
 
-    const payload = {
-      ...formData,
-      expiration_date: formData.expiration_date || null,
-      supplier_name: formData.supplier_name || null,
-    };
+    const payload = new FormData();
+    payload.append('name', formData.name);
+    payload.append('sku', formData.sku);
+    payload.append('current_stock', String(formData.current_stock));
+    payload.append('low_stock_threshold', String(formData.low_stock_threshold));
+    payload.append('supplier_name', formData.supplier_name || '');
+    payload.append('expiration_date', formData.expiration_date || '');
+    if (image) payload.append('image', image);
 
     try {
       await api.put(`/products/${id}`, payload);
@@ -77,6 +92,8 @@ const EditProduct = () => {
       setLoading(false);
     }
   };
+
+  const displayImage = imagePreview || existingImageUrl;
 
   if (fetching) return <div className="p-8 text-gray-500">Loading product...</div>;
 
@@ -97,6 +114,29 @@ const EditProduct = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+            <div className="flex items-center gap-4">
+              {displayImage ? (
+                <img
+                  src={displayImage}
+                  alt="Product"
+                  className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs text-center px-2">
+                  No image
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                onChange={handleImageChange}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Upload a new image to replace the current one.</p>
+          </div>
 
           <div className="col-span-2 md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -133,7 +173,6 @@ const EditProduct = () => {
             <input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange}
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t mt-6">

@@ -11,6 +11,8 @@ const AddProduct = () => {
     expiration_date: '',
     low_stock_threshold: 5,
   });
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -23,16 +25,26 @@ const AddProduct = () => {
     });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: '', text: '' });
 
-    const payload = {
-      ...formData,
-      expiration_date: formData.expiration_date || null,
-      supplier_name: formData.supplier_name || null,
-    };
+    const payload = new FormData();
+    payload.append('name', formData.name);
+    payload.append('sku', formData.sku);
+    payload.append('current_stock', String(formData.current_stock));
+    payload.append('low_stock_threshold', String(formData.low_stock_threshold));
+    if (formData.supplier_name) payload.append('supplier_name', formData.supplier_name);
+    if (formData.expiration_date) payload.append('expiration_date', formData.expiration_date);
+    if (image) payload.append('image', image);
 
     try {
       await api.post('/products', payload);
@@ -47,6 +59,8 @@ const AddProduct = () => {
         expiration_date: '',
         low_stock_threshold: 5,
       });
+      setImage(null);
+      setImagePreview(null);
     } catch (error) {
       const text = axios.isAxiosError(error)
         ? (error.response?.data as { message?: string })?.message ?? 'Failed to add product. Please check your inputs.'
@@ -69,6 +83,29 @@ const AddProduct = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+            <div className="flex items-center gap-4">
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs text-center px-2">
+                  No image
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                onChange={handleImageChange}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">JPEG, PNG, GIF or WebP. Max 2MB.</p>
+          </div>
 
           <div className="col-span-2 md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -105,7 +142,6 @@ const AddProduct = () => {
             <input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange}
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-
         </div>
 
         <div className="flex justify-end pt-4 border-t mt-6">

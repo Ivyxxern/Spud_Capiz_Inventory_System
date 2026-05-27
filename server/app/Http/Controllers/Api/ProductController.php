@@ -38,13 +38,20 @@ class ProductController extends Controller
             'supplier_name' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
             'low_stock_threshold' => 'required|integer|min:1',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validatedData['image_path'] = $request->file('image')->store('products', 'public');
+        }
+
+        unset($validatedData['image']);
 
         $product = Product::create($validatedData);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Product successfully added to inventory.',
+            'message' => 'Product added successfully.',
             'data' => $product,
         ], 201);
     }
@@ -78,7 +85,15 @@ class ProductController extends Controller
             'supplier_name' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
             'low_stock_threshold' => 'sometimes|required|integer|min:1',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            $product->deleteImageFile();
+            $validatedData['image_path'] = $request->file('image')->store('products', 'public');
+        }
+
+        unset($validatedData['image']);
 
         $product->update($validatedData);
         $product->refresh();
@@ -107,7 +122,6 @@ class ProductController extends Controller
         ], 200);
     }
 
-    // 4. DELETE: Remove a product
     public function destroy($id)
     {
         $product = Product::find($id);
@@ -116,11 +130,12 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
+        $product->deleteImageFile();
         $product->delete();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Product successfully deleted.'
+            'message' => 'Product successfully deleted.',
         ], 200);
     }
 }
