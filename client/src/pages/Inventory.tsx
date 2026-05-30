@@ -4,8 +4,6 @@ import api from '../services/api';
 import type { Product } from '../types';
 import { getProductImageUrl } from '../utils/productImage';
 
-const DEMO_CATEGORIES = ['Meat', 'Vegetables', 'Poultry', 'Canned Goods'] as const;
-
 const minDelay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const STATUS_STYLES = {
@@ -65,6 +63,17 @@ const Inventory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  const getCategoryForProduct = (name: string) => {
+    const lowerName = name.toLowerCase();
+
+    if (lowerName.includes('egg') || lowerName.includes('chicken')) return 'Poultry';
+    if (lowerName.includes('bacon') || lowerName.includes('steak') || lowerName.includes('ham') || lowerName.includes('pork') || lowerName.includes('beef')) return 'Meat';
+    if (lowerName.includes('potato') || lowerName.includes('broccoli') || lowerName.includes('carrot') || lowerName.includes('cabbage')) return 'Vegetables';
+    if (lowerName.includes('bean') || lowerName.includes('corned') || lowerName.includes('sardines')) return 'Canned Goods';
+
+    return 'Other';
+  };
+
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -79,7 +88,7 @@ const Inventory = () => {
       ]);
       const fetchedProducts: Product[] = response.data.data.inventory.map((p: Product) => ({
         ...p,
-        category: p.category || DEMO_CATEGORIES[Math.floor(Math.random() * DEMO_CATEGORIES.length)],
+        category: p.category || getCategoryForProduct(p.name),
       }));
       setProducts(fetchedProducts);
     } catch {
@@ -255,10 +264,10 @@ const Inventory = () => {
                                 <img
                                   src={imageUrl}
                                   alt={product.name}
-                                  className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0"
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 shadow-sm shrink-0"
                                 />
                               ) : (
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${avatarColor}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border-2 border-white shadow-sm ${avatarColor}`}>
                                   {initials}
                                 </div>
                               )}
